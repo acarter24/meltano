@@ -36,13 +36,13 @@ class CatalogRule:  # noqa: D101
     def __init__(
         self,
         tap_stream_id: str | list[str],
-        breadcrumb: list[str] | None = None,
+        breadcrumb: tuple[str, ...] | None = None,
         *,
         negated: bool = False,
     ):
         """Create a catalog rule for a stream and property."""
         self.tap_stream_id = tap_stream_id
-        self.breadcrumb = breadcrumb or []
+        self.breadcrumb = breadcrumb or ()
         self.negated = negated
 
     @classmethod
@@ -50,12 +50,16 @@ class CatalogRule:  # noqa: D101
         cls: type[T],
         rules: list[T],
         tap_stream_id: str,
-        breadcrumb: list[str] | None = None,
+        breadcrumb: tuple[str, ...] | None = None,
     ):
         """Filter rules that match a given breadcrumb."""
         return [rule for rule in rules if rule.match(tap_stream_id, breadcrumb)]
 
-    def match(self, tap_stream_id: str, breadcrumb: list[str] | None = None) -> bool:
+    def match(
+        self,
+        tap_stream_id: str,
+        breadcrumb: tuple[str, ...] | None = None,
+    ) -> bool:
         """Evaluate if rule matches a stream or breadcrumb.
 
         Args:
@@ -91,7 +95,7 @@ class MetadataRule(CatalogRule):  # noqa: D101
     def __init__(
         self,
         tap_stream_id: str | list[str],
-        breadcrumb: list[str] | None,
+        breadcrumb: tuple[str, ...] | None,
         key: str,
         *,
         value: bool,
@@ -102,12 +106,20 @@ class MetadataRule(CatalogRule):  # noqa: D101
         self.key = key
         self.value = value
 
+    def __repr__(self) -> str:
+        """Return a string representation of the rule.
+
+        Returns:
+            A string representation of the rule.
+        """
+        return f"MetadataRule<{self.tap_stream_id}.{'.'.join(self.breadcrumb)}>"
+
 
 class SchemaRule(CatalogRule):  # noqa: D101
     def __init__(
         self,
         tap_stream_id: str | list[str],
-        breadcrumb: list[str] | None,
+        breadcrumb: tuple[str, ...] | None,
         payload: dict,
         *,
         negated: bool = False,
@@ -272,7 +284,7 @@ def path_property(path: str) -> str:
     return ".".join(components)
 
 
-def property_breadcrumb(props: list[str]) -> list[str]:
+def property_breadcrumb(props: t.Sequence[str]) -> tuple[str, ...]:
     """Create breadcrumb from properties path list.
 
     Args:
@@ -283,7 +295,7 @@ def property_breadcrumb(props: list[str]) -> list[str]:
 
     Example:
     >>> property_breadcrumb(["payload", "content"])
-    ['properties', 'payload', 'properties', 'content']
+    ('properties', 'payload', 'properties', 'content')
     """
     if len(props) >= 2 and props[0] == "properties":
         breadcrumb = props
@@ -292,7 +304,7 @@ def property_breadcrumb(props: list[str]) -> list[str]:
         for prop in props:
             breadcrumb.extend(["properties", prop])
 
-    return breadcrumb
+    return tuple(breadcrumb)
 
 
 class CatalogNode(Enum):  # noqa: D101
@@ -406,7 +418,7 @@ class MetadataExecutor(CatalogExecutor):  # noqa: D101
         self._stream = None
         self._rules = rules
 
-    def ensure_metadata(self, breadcrumb: list[str]) -> None:
+    def ensure_metadata(self, breadcrumb: tuple[str, ...]) -> None:
         """Handle missing metadata entries."""
         metadata_list: list[dict] = self._stream["metadata"]
         match = next(
@@ -503,7 +515,7 @@ class SchemaExecutor(CatalogExecutor):  # noqa: D101
         self._stream = None
         self._rules = rules
 
-    def ensure_property(self, breadcrumb: list[str]) -> None:
+    def ensure_property(self, breadcrumb: t.Sequence[str]) -> None:
         """Create nodes for the breadcrumb and schema extra that matches."""
         next_node: dict[str, t.Any] = self._stream["schema"]
 
@@ -513,10 +525,10 @@ class SchemaExecutor(CatalogExecutor):  # noqa: D101
             if re.match(r"[*?\[\]]", key):
                 node_keys = next_node.keys()
                 if matching_keys := fnmatch.filter(node_keys, key):
-                    matching_breadcrumb = breadcrumb.copy()
                     for key in matching_keys:
-                        matching_breadcrumb[idx] = key
-                        self.ensure_property(matching_breadcrumb)
+                        self.ensure_property(
+                            breadcrumb[:idx] + [key] + breadcrumb[idx + 1 :]
+                        )
 
                 break
 
