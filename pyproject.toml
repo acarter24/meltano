@@ -92,6 +92,7 @@ uv = ["uv"]
 
 [tool.poetry.group.dev.dependencies]
 backoff = "^2.1.2"
+backports-zoneinfo = {version = "^0.2.1", python = "<=3.8"}
 boto3-stubs = {extras = ["essential"], version = "1.35.34"}
 colorama = "^0.4.4"
 coverage = {extras = ["toml"], version = ">=7.3.2,!=7.3.3"}
