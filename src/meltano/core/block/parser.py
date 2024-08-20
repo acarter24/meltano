@@ -323,4 +323,6 @@ class BlockParser:  # noqa: D101
                 raise BlockSetValidationError(
                     f"Expected {PluginType.MAPPERS} or {PluginType.LOADERS}.",  # noqa: EM102
                 )
-        raise BlockSetValidationError("Found no end in block set!")  # noqa: EM101
+        errmsg = "Found no end in block set!"
+        instruction = "Ensure the last block is a loader, e.g. 'target-postgres'"
+        raise BlockSetValidationError(errmsg, instruction=instruction)
