@@ -31,12 +31,17 @@ jobs:
       packages: write
       security-events: write
     env:
-      DEFAULT_PYTHON: "3.9"  # will be used in 'latest' images
+      DEFAULT_PYTHON: "3.11"  # will be used in 'latest' images
 
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version:
+        - "3.8"
+        - "3.9"
+        - "3.10"
+        - "3.11"
+        - "3.12"
 
     steps:
     - name: Set the workflow inputs
