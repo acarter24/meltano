@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import re
 import typing as t
 from collections import defaultdict
@@ -190,7 +191,7 @@ class PluginRef(Canonical):
 
     name: str
 
-    def __init__(self, plugin_type: str | PluginType, name: str, **kwargs):  # noqa: ANN003
+    def __init__(self, plugin_type: str | PluginType, name: str, **kwargs: t.Any):
         """Create a new PluginRef.
 
         Args:
@@ -428,7 +429,7 @@ class PluginDefinition(PluginRef):
         except NotFound as err:
             raise VariantNotFoundError(self, variant_name) from err
 
-    def find_variant(self, variant_or_name: str | Variant | None = None):  # noqa: ANN201
+    def find_variant(self, variant_or_name: str | Variant | None = None) -> Variant:
         """Find the variant with the given name or variant.
 
         Args:
@@ -516,6 +517,14 @@ class PluginDefinition(PluginRef):
             env=plugin.env,
             **plugin.extras,
         )
+
+
+@dataclasses.dataclass
+class PluginFile:
+    """A plugin file."""
+
+    name: str
+    cached: bool = False
 
 
 class BasePlugin(HookObject):
@@ -735,7 +744,7 @@ class BasePlugin(HookObject):
         return []
 
     @property
-    def config_files(self):  # noqa: ANN201
+    def config_files(self) -> dict[str, PluginFile]:
         """Return a list of stubbed files created for this plugin.
 
         Returns:
@@ -744,7 +753,7 @@ class BasePlugin(HookObject):
         return {}
 
     @property
-    def output_files(self):  # noqa: ANN201
+    def output_files(self) -> dict[str, PluginFile]:
         """Return a list of stubbed files created for this plugin.
 
         Returns:

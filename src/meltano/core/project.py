@@ -7,11 +7,13 @@ import os
 import sys
 import threading
 import typing as t
+import uuid
 from contextlib import contextmanager
 from functools import cached_property
 from pathlib import Path
 
 import fasteners  # type: ignore[import-untyped]
+import platformdirs
 import structlog
 from dotenv import dotenv_values
 
@@ -76,12 +78,13 @@ class Project(Versioned):
     _meltano_rw_lock = fasteners.ReaderWriterLock()
     _default = None
 
-    def __init__(
+    def __init__(  # noqa: D417
         self,
         root: StrPath,
         environment: Environment | None = None,
         *,
         readonly: bool = False,
+        tempdir: StrPath | None = None,
     ):
         """Initialize a `Project` instance.
 
@@ -96,6 +99,7 @@ class Project(Versioned):
         self.sys_dir_root = Path(
             os.getenv(PROJECT_SYS_DIR_ROOT_ENV, self.root / ".meltano"),
         ).resolve()
+        self._tempdir = Path(tempdir) if tempdir else None
 
     def refresh(self, **kwargs) -> None:  # noqa: ANN003
         """Refresh the project instance to reflect external changes.
@@ -114,6 +118,7 @@ class Project(Versioned):
             "root": self.root,
             "environment": self.environment,
             "readonly": self.readonly,
+            "tempdir": self._tempdir,
             **kwargs,
         }
         cls = type(self)
@@ -188,6 +193,15 @@ class Project(Versioned):
             PROJECT_SYS_DIR_ROOT_ENV: str(self.sys_dir_root),
         }
 
+    @cached_property
+    def invocation_uid(self) -> str:
+        """Get a unique identifier for this project invocation.
+
+        Returns:
+            A unique identifier for this project invocation.
+        """
+        return uuid.uuid4().hex
+
     @classmethod
     @fasteners.locked(lock="_activate_lock")
     def activate(cls, project: Project) -> None:
@@ -258,7 +272,13 @@ class Project(Versioned):
 
     @classmethod
     @fasteners.locked(lock="_find_lock")
-    def find(cls, project_root: Path | str | None = None, *, activate=True):  # noqa: ANN001, ANN206
+    def find(  # noqa: D417
+        cls,
+        project_root: Path | str | None = None,
+        *,
+        activate: bool = True,
+        tempdir: StrPath | None = None,
+    ) -> Project:
         """Find a Project.
 
         Args:
@@ -278,16 +298,17 @@ class Project(Versioned):
         """
         if cls._default:
             return cls._default
+        logger.info("Looking for a Meltano project...")
 
         readonly = truthy(os.getenv(PROJECT_READONLY_ENV, "false"))
 
         if project_root := project_root or os.getenv(PROJECT_ROOT_ENV):
-            project = Project(project_root, readonly=readonly)
+            project = cls(project_root, readonly=readonly, tempdir=tempdir)
             if not project.meltanofile.exists():
                 raise ProjectNotFound(project)
         else:
             for directory in walk_parent_directories():
-                project = Project(directory, readonly=readonly)
+                project = cls(directory, readonly=readonly, tempdir=tempdir)
                 if project.meltanofile.exists():
                     break
             if not project.meltanofile.exists():
@@ -300,6 +321,7 @@ class Project(Versioned):
         if activate:
             cls.activate(project)
 
+        logger.info(f"Found Meltano project at {project.root}")  # noqa: G004
         return project
 
     @property
@@ -424,6 +446,16 @@ class Project(Versioned):
         self.refresh()
 
     @makedirs
+    def tempdir(self, *joinpaths: StrPath, make_dirs: bool = True) -> Path:  # noqa: ARG002
+        """Get a temporary directory for this project.
+
+        Returns:
+            A temporary directory for this project.
+        """
+        assert self._tempdir, "tempdir not set"  # noqa: S101
+        return self._tempdir.joinpath(*joinpaths)
+
+    @makedirs
     def meltano_dir(self, *joinpaths: StrPath, make_dirs: bool = True) -> Path:  # noqa: ARG002
         """Path to the project `.meltano` directory.
 
@@ -435,6 +467,17 @@ class Project(Versioned):
             Resolved path to `.meltano` dir optionally joined to given paths.
         """
         return self.sys_dir_root.joinpath(*joinpaths)
+
+    def cache_dir(self, plugin: PluginRef) -> Path:
+        """Path to the plugin cache directory in `.meltano`.
+
+        Args:
+            plugin: Plugin to retrieve or create cache directory for.
+
+        Returns:
+            Resolved path to plugin cache directory.
+        """
+        return platformdirs.user_cache_path("meltano") / plugin.plugin_dir_name
 
     @makedirs
     def analyze_dir(self, *joinpaths: StrPath, make_dirs: bool = True) -> Path:  # noqa: ARG002
@@ -502,7 +545,12 @@ class Project(Versioned):
         return self.meltano_dir("logs", *joinpaths, make_dirs=make_dirs)
 
     @makedirs
-    def job_dir(self, state_id, *joinpaths: StrPath, make_dirs: bool = True) -> Path:  # noqa: ANN001
+    def job_dir(
+        self,
+        state_id: str,
+        *joinpaths: StrPath,
+        make_dirs: bool = True,
+    ) -> Path:
         """Path to the `elt` directory in `.meltano/run`.
 
         Args:
