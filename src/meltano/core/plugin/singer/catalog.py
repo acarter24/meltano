@@ -13,9 +13,9 @@ import structlog
 from meltano.core.behavior.visitor import visit_with
 
 if sys.version_info < (3, 11):
-    ReprEnum = Enum
+    from backports.strenum import StrEnum
 else:
-    from enum import ReprEnum
+    from enum import StrEnum
 
 logger = structlog.stdlib.get_logger(__name__)
 
@@ -301,13 +301,12 @@ class CatalogNode(Enum):  # noqa: D101
     METADATA = auto()
 
 
-# TODO: Move to `enum.StrEnum` when support for Python 3.8 is dropped
-class SelectionType(str, ReprEnum):
+class SelectionType(StrEnum):
     """A valid stream or property selection type."""
 
-    SELECTED = "selected"
-    EXCLUDED = "excluded"
-    AUTOMATIC = "automatic"
+    SELECTED = auto()
+    EXCLUDED = auto()
+    AUTOMATIC = auto()
 
     def __bool__(self) -> bool:  # noqa: D105
         return self is not self.__class__.EXCLUDED

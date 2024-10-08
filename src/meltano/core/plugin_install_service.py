@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import enum
 import functools
 import logging
 import os
@@ -10,7 +11,6 @@ import shlex
 import sys
 import typing as t
 from dataclasses import dataclass
-from enum import Enum
 from functools import cached_property
 from multiprocessing import cpu_count
 
@@ -36,6 +36,11 @@ from meltano.core.venv_service import (
     fingerprint,
 )
 
+if sys.version_info < (3, 11):
+    from backports.strenum import StrEnum
+else:
+    from enum import StrEnum
+
 if t.TYPE_CHECKING:
     from meltano.core.plugin.project_plugin import ProjectPlugin
     from meltano.core.project import Project
@@ -43,23 +48,23 @@ if t.TYPE_CHECKING:
 logger = structlog.stdlib.get_logger(__name__)
 
 
-class PluginInstallReason(str, Enum):
+class PluginInstallReason(StrEnum):
     """Plugin install reason enum."""
 
-    ADD = "add"
-    AUTO = "auto"
-    INSTALL = "install"
-    UPGRADE = "upgrade"
+    ADD = enum.auto()
+    AUTO = enum.auto()
+    INSTALL = enum.auto()
+    UPGRADE = enum.auto()
 
 
-class PluginInstallStatus(Enum):
+class PluginInstallStatus(StrEnum):
     """The status of the process of installing a plugin."""
 
-    RUNNING = "running"
-    SUCCESS = "success"
-    SKIPPED = "skipped"
-    ERROR = "error"
-    WARNING = "warning"
+    RUNNING = enum.auto()
+    SUCCESS = enum.auto()
+    SKIPPED = enum.auto()
+    ERROR = enum.auto()
+    WARNING = enum.auto()
 
 
 @dataclass(frozen=True)

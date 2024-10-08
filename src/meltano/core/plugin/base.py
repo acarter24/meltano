@@ -83,14 +83,6 @@ class PluginType(YAMLEnum):
     MAPPERS = "mappers"
     MAPPINGS = "mappings"
 
-    def __str__(self) -> str:
-        """Return a string representation of the plugin type.
-
-        Returns:
-            The string representation of the plugin type.
-        """
-        return self.value
-
     @property
     def descriptor(self) -> str:
         """Return the descriptor of the plugin type.

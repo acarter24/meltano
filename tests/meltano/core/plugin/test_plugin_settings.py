@@ -952,7 +952,7 @@ class TestPluginSettingsService:
         subject.set(
             "_vars",
             {"dev_setting": "from_dev_env"},
-            store=SettingValueStore.MELTANO_ENV,
+            store=SettingValueStore.MELTANO_ENVIRONMENT,
         )
         assert subject.get_with_source("_vars") == (
             {
@@ -960,7 +960,7 @@ class TestPluginSettingsService:
                 "other": "from_meltano_yml",
                 "dev_setting": "from_dev_env",
             },
-            SettingValueStore.MELTANO_ENV,
+            SettingValueStore.MELTANO_ENVIRONMENT,
         )
 
         subject.project.deactivate_environment()

@@ -34,14 +34,6 @@ TRUTHY = ("true", "1", "yes", "on")
 REGEX_EMAIL = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
 
 
-try:
-    # asyncio.Task.all_tasks() is fully moved to asyncio.all_tasks() starting
-    # with Python 3.9. Also applies to current_task.
-    asyncio_all_tasks = asyncio.all_tasks
-except AttributeError:
-    asyncio_all_tasks = asyncio.Task.all_tasks
-
-
 class NotFound(Exception):
     """An element is not found."""
 
@@ -821,25 +813,6 @@ def _deep_merge(a, b, strategies):  # noqa: ANN001, ANN202
             ):
                 break
     return base
-
-
-def remove_suffix(string: str, suffix: str) -> str:
-    """Remove suffix from string.
-
-    Compatible with Python 3.8
-
-    Args:
-        string: the string to remove suffix from
-        suffix: the suffix to remove
-
-    Returns:
-        The changed string
-    """
-    if sys.version_info >= (3, 9):
-        return string.removesuffix(suffix)
-    if string.endswith(suffix):
-        return string[: -len(suffix)]
-    return string
 
 
 _filename_restriction_pattern = re.compile(r"[^\w.-]")

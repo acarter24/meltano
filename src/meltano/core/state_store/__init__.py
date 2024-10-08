@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import enum
 import platform
+import sys
 import typing as t
-from enum import Enum
 from urllib.parse import urlparse
 
 from meltano.core.db import project_engine
@@ -17,6 +18,11 @@ from meltano.core.state_store.filesystem import (
 from meltano.core.state_store.google import GCSStateStoreManager
 from meltano.core.state_store.s3 import S3StateStoreManager
 
+if sys.version_info < (3, 11):
+    from backports.strenum import StrEnum
+else:
+    from enum import StrEnum
+
 if t.TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
@@ -24,7 +30,7 @@ if t.TYPE_CHECKING:
     from meltano.core.state_store.base import StateStoreManager
 
 
-class StateBackend(str, Enum):
+class StateBackend(StrEnum):
     """State backend."""
 
     SYSTEMDB = "systemdb"

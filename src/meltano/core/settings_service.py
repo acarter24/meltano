@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import enum
 import os
+import sys
 import typing as t
 import warnings
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager, suppress
-from enum import Enum
 
 import structlog
 
@@ -19,6 +20,11 @@ from meltano.core.setting_definition import (
 from meltano.core.settings_store import SettingValueStore
 from meltano.core.utils import EnvVarMissingBehavior, flatten
 from meltano.core.utils import expand_env_vars as do_expand_env_vars
+
+if sys.version_info < (3, 11):
+    from backports.strenum import StrEnum
+else:
+    from enum import StrEnum
 
 if t.TYPE_CHECKING:
     from meltano.core.project import Project
@@ -35,19 +41,11 @@ EXPERIMENTAL = "experimental"
 FEATURE_FLAG_PREFIX = "ff"
 
 
-class FeatureFlags(str, Enum):
+class FeatureFlags(StrEnum):
     """Available Meltano Feature Flags."""
 
-    STRICT_ENV_VAR_MODE = "strict_env_var_mode"
-    PLUGIN_LOCKS_REQUIRED = "plugin_locks_required"
-
-    def __str__(self) -> str:
-        """Return feature name.
-
-        Returns:
-            str: Feature name.
-        """
-        return self.value
+    STRICT_ENV_VAR_MODE = enum.auto()
+    PLUGIN_LOCKS_REQUIRED = enum.auto()
 
     @property
     def setting_name(self) -> str:

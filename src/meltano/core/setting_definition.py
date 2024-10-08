@@ -4,16 +4,21 @@ from __future__ import annotations
 
 import ast
 import json
+import sys
 import typing as t
 from collections.abc import Mapping, Sequence
 from datetime import date, datetime
-from enum import Enum
 from functools import cached_property
 
 from meltano.core import utils
 from meltano.core.behavior import NameEq
 from meltano.core.behavior.canonical import Canonical
 from meltano.core.error import Error
+
+if sys.version_info < (3, 11):
+    from backports.strenum import StrEnum
+else:
+    from enum import StrEnum
 
 if t.TYPE_CHECKING:
     from ruamel.yaml import Node, Representer, ScalarNode
@@ -79,7 +84,7 @@ class SettingMissingError(Error):
         super().__init__(f"Cannot find setting {name}")
 
 
-class YAMLEnum(str, Enum):
+class YAMLEnum(StrEnum):
     """Serializable Enum class."""
 
     def __str__(self) -> str:
