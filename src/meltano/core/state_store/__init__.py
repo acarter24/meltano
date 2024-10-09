@@ -12,7 +12,6 @@ from structlog.stdlib import get_logger
 
 from meltano.core.behavior.addon import MeltanoAddon
 from meltano.core.db import project_engine
-from meltano.core.state_store.azure import AZStorageStateStoreManager
 from meltano.core.state_store.base import StateStoreManager
 from meltano.core.state_store.db import DBStateStoreManager
 from meltano.core.state_store.filesystem import (
@@ -32,7 +31,6 @@ else:
     from importlib_metadata import EntryPoints, entry_points
 
 __all__ = [
-    "AZStorageStateStoreManager",
     "BuiltinStateBackendEnum",
     "DBStateStoreManager",
     "GCSStateStoreManager",
@@ -53,7 +51,6 @@ class BuiltinStateBackendEnum(str, Enum):
     # the given type. E.g., filesystem state backends have a
     # file://<path>/<to>/<state directory> URI
     LOCAL_FILESYSTEM = "file"
-    AZURE = "azure"
     GCS = "gs"
 
 
@@ -93,7 +90,6 @@ class StateBackend:
         return {
             BuiltinStateBackendEnum.SYSTEMDB: DBStateStoreManager,
             BuiltinStateBackendEnum.LOCAL_FILESYSTEM: LocalFilesystemStateStoreManager,
-            BuiltinStateBackendEnum.AZURE: AZStorageStateStoreManager,
             BuiltinStateBackendEnum.GCS: GCSStateStoreManager,
         }
 
